@@ -27,6 +27,7 @@ import {
   getDatePickerElement,
   getUserSelectElement,
 } from "./ui/render.js";
+import "./styles.css";
 
 const state = createInitialState();
 let unsubscribePersonal = null;
