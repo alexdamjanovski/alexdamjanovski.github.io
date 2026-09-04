@@ -1,5 +1,7 @@
 import { fromYYYYMMDD } from "./state.js";
 
+// test commit comment
+
 const els = {
   userSelect: () => document.getElementById("user-select"),
   activeUserBanner: () => document.getElementById("active-user-banner"),
