@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /games/{gameId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /scores/{scoreId} {
+      allow read: if true;
+      allow delete: if false;
+
+      allow create: if isValidScore(request.resource.data);
+      allow update: if isValidScore(request.resource.data)
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.gameId == resource.data.gameId
+        && request.resource.data.date == resource.data.date;
+    }
+  }
+}
+
+function isValidScore(data) {
+  return data.keys().hasAll(['userId', 'gameId', 'score', 'date'])
+    && data.userId is string
+    && data.gameId is string
+    && data.score is string
+    && data.score.size() > 0
+    && data.score.size() <= 5000
+    && data.date is string
+    && data.date.matches('^\\d{8}$');
+}

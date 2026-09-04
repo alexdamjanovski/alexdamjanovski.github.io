@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Games Scores</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <h1>Daily Games Scores</h1>
+        <div class="user-select-row">
+          <label for="user-select">Posting as</label>
+          <select id="user-select">
+            <option value="">Select a user…</option>
+          </select>
+        </div>
+        <p id="active-user-banner" class="active-user-banner" hidden></p>
+      </header>
+
+      <main>
+        <section class="controls">
+          <div class="control-group">
+            <span class="control-label">Game</span>
+            <div id="game-list" class="game-list"></div>
+          </div>
+          <div class="control-group">
+            <label for="date-picker" class="control-label">Date</label>
+            <input type="date" id="date-picker" />
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 id="personal-panel-title">Your score</h2>
+          <div id="personal-panel" class="personal-panel">
+            <p class="placeholder">Select a user to get started.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 id="group-panel-title">Everyone's scores</h2>
+          <div id="group-board" class="group-board">
+            <p class="placeholder">Scores will appear here.</p>
+          </div>
+        </section>
+      </main>
+
+      <div id="toast" class="toast" hidden></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
