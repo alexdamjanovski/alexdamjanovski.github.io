@@ -1,4 +1,5 @@
 import { fromYYYYMMDD } from "./state.js";
+import { normalizeScoreEmojis } from "./emoji.js";
 
 // test commit comment
 
@@ -142,7 +143,7 @@ export function renderPersonalPanel({
   if (canEdit) {
     const pre = document.createElement("pre");
     pre.className = "score-display";
-    pre.textContent = score.score;
+    pre.textContent = normalizeScoreEmojis(score.score);
     panel.appendChild(pre);
 
     const editBtn = document.createElement("button");
@@ -156,7 +157,7 @@ export function renderPersonalPanel({
 
   const pre = document.createElement("pre");
   pre.className = "score-display";
-  pre.textContent = score.score;
+  pre.textContent = normalizeScoreEmojis(score.score);
   panel.appendChild(pre);
 
   const note = document.createElement("p");
@@ -242,7 +243,7 @@ export function renderGroupBoard({ state, users }) {
     if (scoreEntry) {
       const pre = document.createElement("pre");
       pre.className = "score-display score-display-compact";
-      pre.textContent = scoreEntry.score;
+      pre.textContent = normalizeScoreEmojis(scoreEntry.score);
       item.appendChild(pre);
     } else {
       const empty = document.createElement("span");

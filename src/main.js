@@ -15,6 +15,7 @@ import {
   buildUsersById,
   toYYYYMMDD,
 } from "./ui/state.js";
+import { normalizeScoreEmojis } from "./ui/emoji.js";
 import {
   renderDatePicker,
   renderGameList,
@@ -138,7 +139,7 @@ async function handleSubmit(scoreText) {
       scoreId,
       userId: activeUser.id,
       gameId: game.id,
-      score: scoreText,
+      score: normalizeScoreEmojis(scoreText),
       date,
     });
     state.editing = false;

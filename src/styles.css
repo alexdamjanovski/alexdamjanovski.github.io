@@ -12,6 +12,8 @@
   --radius: 10px;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: "Cascadia Code", "SF Mono", Consolas, monospace;
+  --emoji: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Twemoji Mozilla";
+  --score-font: var(--mono), var(--emoji), sans-serif;
 }
 
 *,
@@ -185,7 +187,8 @@ select {
 }
 
 .score-form textarea {
-  font-family: var(--mono);
+  font-family: var(--score-font);
+  font-variant-emoji: emoji;
   font-size: 0.875rem;
   background: var(--bg);
   color: var(--text);
@@ -232,8 +235,10 @@ select {
 }
 
 .score-display {
-  font-family: var(--mono);
-  font-size: 0.8125rem;
+  font-family: var(--emoji), var(--mono), sans-serif;
+  font-variant-emoji: emoji;
+  font-size: 1rem;
+  line-height: 1.35;
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0 0 0.75rem;
