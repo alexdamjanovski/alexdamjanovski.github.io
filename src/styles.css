@@ -107,11 +107,11 @@ select {
 .game-pill {
   display: inline-flex;
   align-items: center;
+  gap: 0.125rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 0.25rem 0.25rem 0.25rem 0.75rem;
-  cursor: pointer;
+  padding: 0.15rem 0.25rem 0.15rem 0.15rem;
   transition: background 0.15s, border-color 0.15s;
 }
 
@@ -124,16 +124,37 @@ select {
   background: var(--surface-hover);
 }
 
-.game-pill a {
-  color: var(--text);
-  text-decoration: none;
+.game-pill-select {
+  font: inherit;
   font-size: 0.875rem;
   font-weight: 500;
-  padding-right: 0.5rem;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
 }
 
-.game-pill a:hover {
+.game-pill-select:hover {
   color: var(--accent);
+}
+
+.game-pill-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--text-muted);
+  border-radius: 999px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.game-pill-link:hover {
+  color: var(--accent);
+  background: var(--bg);
 }
 
 .panel {

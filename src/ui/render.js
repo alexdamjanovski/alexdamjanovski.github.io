@@ -53,21 +53,32 @@ export function renderGameList(games, selectedGameId, onSelect) {
   container.innerHTML = "";
 
   for (const game of games) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "game-pill";
-    if (game.id === selectedGameId) btn.classList.add("active");
+    const pill = document.createElement("div");
+    pill.className = "game-pill";
+    if (game.id === selectedGameId) pill.classList.add("active");
 
-    const link = document.createElement("a");
-    link.href = game.URL || "#";
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = game.gameTitle;
-    link.addEventListener("click", (e) => e.stopPropagation());
+    const selectBtn = document.createElement("button");
+    selectBtn.type = "button";
+    selectBtn.className = "game-pill-select";
+    selectBtn.textContent = game.gameTitle;
+    selectBtn.addEventListener("click", () => onSelect(game.id));
 
-    btn.appendChild(link);
-    btn.addEventListener("click", () => onSelect(game.id));
-    container.appendChild(btn);
+    pill.appendChild(selectBtn);
+
+    if (game.URL) {
+      const link = document.createElement("a");
+      link.className = "game-pill-link";
+      link.href = game.URL;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.title = `Open ${game.gameTitle}`;
+      link.setAttribute("aria-label", `Open ${game.gameTitle}`);
+      link.innerHTML =
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+      pill.appendChild(link);
+    }
+
+    container.appendChild(pill);
   }
 }
 
