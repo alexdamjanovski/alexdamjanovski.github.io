@@ -25,9 +25,12 @@ service cloud.firestore {
 
     match /comments/{commentId} {
       allow read: if true;
-      allow update, delete: if false;
+      allow update: if false;
 
       allow create: if isValidComment(request.resource.data);
+      // No auth to check an author against, and the group is happy for
+      // anyone to clean up a comment.
+      allow delete: if true;
     }
   }
 }

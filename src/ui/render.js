@@ -238,6 +238,7 @@ export function renderGroupBoard({
   users,
   onCommentDraftChange,
   onCommentSubmit,
+  onCommentDelete,
 }) {
   const board = els.groupBoard();
   const focus = captureCommentFocus();
@@ -284,6 +285,7 @@ export function renderGroupBoard({
           state,
           onCommentDraftChange,
           onCommentSubmit,
+          onCommentDelete,
         })
       );
     } else {
@@ -300,7 +302,12 @@ export function renderGroupBoard({
   restoreCommentFocus(focus);
 }
 
-export function renderFeed({ state, onCommentDraftChange, onCommentSubmit }) {
+export function renderFeed({
+  state,
+  onCommentDraftChange,
+  onCommentSubmit,
+  onCommentDelete,
+}) {
   const feed = els.feed();
   const focus = captureCommentFocus();
 
@@ -338,6 +345,7 @@ export function renderFeed({ state, onCommentDraftChange, onCommentSubmit }) {
         state,
         onCommentDraftChange,
         onCommentSubmit,
+        onCommentDelete,
       })
     );
   }
@@ -345,11 +353,18 @@ export function renderFeed({ state, onCommentDraftChange, onCommentSubmit }) {
   restoreCommentFocus(focus);
 }
 
-/** Newest first, using the submission time and falling back to the score date. */
+/**
+ * Newest day first, then most recently submitted within each day.
+ *
+ * The day the score belongs to has to win over the moment it was submitted:
+ * scores can be back-filled from the date picker, and sorting on submission
+ * time alone would float a back-dated score to the top of the feed and break
+ * the day grouping it sits under.
+ */
 function sortFeedEntries(scores) {
   return [...scores].sort((a, b) => {
-    const byTime = submittedMillis(b) - submittedMillis(a);
-    return byTime !== 0 ? byTime : b.date.localeCompare(a.date);
+    const byDate = b.date.localeCompare(a.date);
+    return byDate !== 0 ? byDate : submittedMillis(b) - submittedMillis(a);
   });
 }
 
@@ -365,6 +380,7 @@ function createFeedEntry({
   state,
   onCommentDraftChange,
   onCommentSubmit,
+  onCommentDelete,
 }) {
   const article = document.createElement("article");
   article.className = "feed-entry";
@@ -401,6 +417,7 @@ function createFeedEntry({
       state,
       onCommentDraftChange,
       onCommentSubmit,
+      onCommentDelete,
     })
   );
 
@@ -413,6 +430,7 @@ function createCommentThread({
   state,
   onCommentDraftChange,
   onCommentSubmit,
+  onCommentDelete,
 }) {
   const wrap = document.createElement("div");
   wrap.className = "comments";
@@ -446,6 +464,19 @@ function createCommentThread({
       time.className = "comment-time";
       time.textContent = formatSubmittedTime(comment.createdAt);
       meta.appendChild(time);
+
+      if (state.activeUserId) {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "comment-delete";
+        remove.textContent = "Delete";
+        remove.title = `Delete ${
+          state.usersById[comment.userId]?.name ?? "this user"
+        }'s comment`;
+        remove.disabled = Boolean(state.commentDeleting[comment.id]);
+        remove.addEventListener("click", () => onCommentDelete(comment));
+        meta.appendChild(remove);
+      }
 
       item.appendChild(meta);
 

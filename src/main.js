@@ -8,6 +8,7 @@ import {
 } from "./db/scores.js";
 import {
   MAX_COMMENT_LENGTH,
+  deleteComment,
   submitComment,
   subscribeToCommentsForScoreIds,
 } from "./db/comments.js";
@@ -111,11 +112,13 @@ function renderAll() {
     users: state.users,
     onCommentDraftChange: handleCommentDraftChange,
     onCommentSubmit: handleCommentSubmit,
+    onCommentDelete: handleCommentDelete,
   });
   renderFeed({
     state,
     onCommentDraftChange: handleCommentDraftChange,
     onCommentSubmit: handleCommentSubmit,
+    onCommentDelete: handleCommentDelete,
   });
 }
 
@@ -240,6 +243,27 @@ async function handleCommentSubmit(scoreId) {
     handleFirestoreError(error);
   } finally {
     delete state.commentPending[scoreId];
+    renderAll();
+  }
+}
+
+async function handleCommentDelete(comment) {
+  const author = state.usersById[comment.userId]?.name ?? "this user";
+  // Anyone can delete anyone's comment and there is no undo, so make the
+  // author explicit before it goes.
+  if (!window.confirm(`Delete ${author}'s comment? This can't be undone.`)) {
+    return;
+  }
+
+  state.commentDeleting[comment.id] = true;
+  renderAll();
+
+  try {
+    await deleteComment(comment.id);
+  } catch (error) {
+    handleFirestoreError(error);
+  } finally {
+    delete state.commentDeleting[comment.id];
     renderAll();
   }
 }

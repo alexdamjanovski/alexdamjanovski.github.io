@@ -1,6 +1,8 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   onSnapshot,
   query,
   serverTimestamp,
@@ -21,6 +23,10 @@ export async function submitComment({ scoreId, userId, text }) {
     text: text.trim(),
     createdAt: serverTimestamp(),
   });
+}
+
+export async function deleteComment(commentId) {
+  await deleteDoc(doc(db, "comments", commentId));
 }
 
 /**

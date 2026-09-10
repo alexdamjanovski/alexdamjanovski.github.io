@@ -28,6 +28,7 @@ export function createInitialState() {
     commentsByScoreId: {},
     commentDrafts: {},
     commentPending: {},
+    commentDeleting: {},
   };
 }
 

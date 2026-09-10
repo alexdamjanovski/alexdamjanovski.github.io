@@ -419,6 +419,42 @@ select {
   color: var(--text-muted);
 }
 
+.comment-delete {
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-left: auto;
+  cursor: pointer;
+  opacity: 0;
+  transition: color 0.15s, opacity 0.15s;
+}
+
+.comment:hover .comment-delete,
+.comment-delete:focus-visible {
+  opacity: 1;
+}
+
+.comment-delete:hover {
+  color: var(--error);
+}
+
+.comment-delete:disabled {
+  cursor: default;
+  opacity: 0.5;
+  color: var(--text-muted);
+}
+
+/* There is no hover on touch, so never hide the control behind one. */
+@media (hover: none) {
+  .comment-delete {
+    opacity: 1;
+  }
+}
+
 .comment-body {
   margin: 0.125rem 0 0;
   font-size: 0.875rem;
