@@ -18,32 +18,55 @@
         <p id="active-user-banner" class="active-user-banner" hidden></p>
       </header>
 
+      <nav id="tab-bar" class="tab-bar" role="tablist" aria-label="Views"></nav>
+
       <main>
-        <section class="controls">
-          <div class="control-group">
-            <span class="control-label">Game</span>
-            <div id="game-list" class="game-list"></div>
-          </div>
-          <div class="control-group">
-            <label for="date-picker" class="control-label">Date</label>
-            <input type="date" id="date-picker" />
-          </div>
-        </section>
+        <div id="tab-scores" role="tabpanel" aria-labelledby="tab-btn-scores">
+          <section class="controls">
+            <div class="control-group">
+              <span class="control-label">Game</span>
+              <div id="game-list" class="game-list"></div>
+            </div>
+            <div class="control-group">
+              <label for="date-picker" class="control-label">Date</label>
+              <input type="date" id="date-picker" />
+            </div>
+          </section>
 
-        <section class="panel">
-          <h2 id="personal-panel-title">Your score</h2>
-          <div id="personal-panel" class="personal-panel">
-            <p class="placeholder">Select a user to get started.</p>
-          </div>
-        </section>
+          <section class="panel">
+            <h2 id="personal-panel-title">Your score</h2>
+            <div id="personal-panel" class="personal-panel">
+              <p class="placeholder">Select a user to get started.</p>
+            </div>
+          </section>
 
-        <section class="panel">
-          <h2 id="group-panel-title">Everyone's scores</h2>
-          <div id="group-board" class="group-board">
-            <p class="placeholder">Scores will appear here.</p>
-          </div>
-        </section>
+          <section class="panel">
+            <h2 id="group-panel-title">Everyone's scores</h2>
+            <div id="group-board" class="group-board">
+              <p class="placeholder">Scores will appear here.</p>
+            </div>
+          </section>
+        </div>
+
+        <div id="tab-feed" role="tabpanel" aria-labelledby="tab-btn-feed" hidden>
+          <section class="panel">
+            <h2 id="feed-panel-title">Recent activity</h2>
+            <div id="feed" class="feed">
+              <p class="placeholder">Loading…</p>
+            </div>
+          </section>
+        </div>
       </main>
+
+      <footer class="footer">
+        <a
+          class="btn btn-secret"
+          href="https://youtu.be/dQw4w9WgXcQ?si=vwIuR-8E_5Jc0_mY"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Secret game challenge of the day</a
+        >
+      </footer>
 
       <div id="toast" class="toast" hidden></div>
     </div>

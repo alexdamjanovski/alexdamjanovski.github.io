@@ -37,6 +37,22 @@ export function subscribeToScore(scoreId, onChange, onError) {
   );
 }
 
+/**
+ * Watches every score submitted on or after `fromDate` (a YYYYMMDD string).
+ * Dates sort lexicographically in that format, so a single range filter is
+ * enough and no composite index is needed.
+ */
+export function subscribeToScoresSince(fromDate, onChange, onError) {
+  const q = query(collection(db, "scores"), where("date", ">=", fromDate));
+  return onSnapshot(
+    q,
+    (snap) => {
+      onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    },
+    onError
+  );
+}
+
 export function subscribeToScoresForGameDate(gameId, date, onChange, onError) {
   const q = query(
     collection(db, "scores"),
