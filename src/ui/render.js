@@ -1,10 +1,12 @@
-import { fromYYYYMMDD } from "./state.js";
+import { fromYYYYMMDD, FEED_WINDOW_DAYS } from "./state.js";
 import { normalizeScoreEmojis } from "./emoji.js";
-
-// test commit comment
+import { MAX_COMMENT_LENGTH } from "../db/comments.js";
 
 const els = {
   userSelect: () => document.getElementById("user-select"),
+  tabBar: () => document.getElementById("tab-bar"),
+  feedPanelTitle: () => document.getElementById("feed-panel-title"),
+  feed: () => document.getElementById("feed"),
   activeUserBanner: () => document.getElementById("active-user-banner"),
   gameList: () => document.getElementById("game-list"),
   datePicker: () => document.getElementById("date-picker"),
@@ -26,6 +28,30 @@ export function showToast(message, isError = false) {
   toastTimeout = setTimeout(() => {
     toast.hidden = true;
   }, 4000);
+}
+
+export function renderTabs(tabs, activeTabId, onSelect) {
+  const bar = els.tabBar();
+  bar.innerHTML = "";
+
+  for (const tab of tabs) {
+    const isActive = tab.id === activeTabId;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = `tab-btn-${tab.id}`;
+    button.className = "tab";
+    button.classList.toggle("active", isActive);
+    button.textContent = tab.label;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", String(isActive));
+    button.setAttribute("aria-controls", `tab-${tab.id}`);
+    button.addEventListener("click", () => onSelect(tab.id));
+    bar.appendChild(button);
+
+    const panel = document.getElementById(`tab-${tab.id}`);
+    if (panel) panel.hidden = !isActive;
+  }
 }
 
 export function renderUserSelect(users, activeUserId) {
@@ -207,8 +233,15 @@ function createSubmitForm({ scoreText, onSubmit, submitLabel, onCancel }) {
   return form;
 }
 
-export function renderGroupBoard({ state, users }) {
+export function renderGroupBoard({
+  state,
+  users,
+  onCommentDraftChange,
+  onCommentSubmit,
+  onCommentDelete,
+}) {
   const board = els.groupBoard();
+  const focus = captureCommentFocus();
   board.innerHTML = "";
 
   if (!state.selectedGameId) {
@@ -245,6 +278,16 @@ export function renderGroupBoard({ state, users }) {
       pre.className = "score-display score-display-compact";
       pre.textContent = normalizeScoreEmojis(scoreEntry.score);
       item.appendChild(pre);
+      item.appendChild(
+        createCommentThread({
+          scoreId: scoreEntry.id,
+          surface: "board",
+          state,
+          onCommentDraftChange,
+          onCommentSubmit,
+          onCommentDelete,
+        })
+      );
     } else {
       const empty = document.createElement("span");
       empty.className = "score-empty";
@@ -256,6 +299,305 @@ export function renderGroupBoard({ state, users }) {
   }
 
   board.appendChild(list);
+  restoreCommentFocus(focus);
+}
+
+export function renderFeed({
+  state,
+  onCommentDraftChange,
+  onCommentSubmit,
+  onCommentDelete,
+}) {
+  const feed = els.feed();
+  const focus = captureCommentFocus();
+
+  els.feedPanelTitle().textContent = `Recent activity — last ${FEED_WINDOW_DAYS} days`;
+  feed.innerHTML = "";
+
+  if (state.feedLoading) {
+    feed.innerHTML = '<p class="placeholder">Loading…</p>';
+    return;
+  }
+
+  const entries = sortFeedEntries(state.feedScores);
+
+  if (entries.length === 0) {
+    feed.innerHTML = `<p class="placeholder">No scores posted in the last ${FEED_WINDOW_DAYS} days.</p>`;
+    return;
+  }
+
+  const gamesById = Object.fromEntries(state.games.map((g) => [g.id, g]));
+  let currentDate = null;
+
+  for (const entry of entries) {
+    if (entry.date !== currentDate) {
+      currentDate = entry.date;
+      const heading = document.createElement("h3");
+      heading.className = "feed-day";
+      heading.textContent = formatFeedDay(entry.date);
+      feed.appendChild(heading);
+    }
+
+    feed.appendChild(
+      createFeedEntry({
+        entry,
+        game: gamesById[entry.gameId],
+        state,
+        onCommentDraftChange,
+        onCommentSubmit,
+        onCommentDelete,
+      })
+    );
+  }
+
+  restoreCommentFocus(focus);
+}
+
+/**
+ * Newest day first, then most recently submitted within each day.
+ *
+ * The day the score belongs to has to win over the moment it was submitted:
+ * scores can be back-filled from the date picker, and sorting on submission
+ * time alone would float a back-dated score to the top of the feed and break
+ * the day grouping it sits under.
+ */
+function sortFeedEntries(scores) {
+  return [...scores].sort((a, b) => {
+    const byDate = b.date.localeCompare(a.date);
+    return byDate !== 0 ? byDate : submittedMillis(b) - submittedMillis(a);
+  });
+}
+
+function submittedMillis(score) {
+  // Scores written just now (or before submittedAt existed) fall back to their
+  // date so they still land in a sensible spot.
+  return score.submittedAt?.toMillis?.() ?? dateKeyToMillis(score.date);
+}
+
+function createFeedEntry({
+  entry,
+  game,
+  state,
+  onCommentDraftChange,
+  onCommentSubmit,
+  onCommentDelete,
+}) {
+  const article = document.createElement("article");
+  article.className = "feed-entry";
+
+  const head = document.createElement("div");
+  head.className = "feed-entry-head";
+
+  const who = document.createElement("span");
+  who.className = "feed-entry-user";
+  who.textContent = state.usersById[entry.userId]?.name ?? "Unknown user";
+  head.appendChild(who);
+
+  const what = document.createElement("span");
+  what.className = "feed-entry-game";
+  what.textContent = game?.gameTitle ?? entry.gameId;
+  head.appendChild(what);
+
+  const when = document.createElement("span");
+  when.className = "feed-entry-time";
+  when.textContent = formatSubmittedTime(entry.submittedAt);
+  head.appendChild(when);
+
+  article.appendChild(head);
+
+  const pre = document.createElement("pre");
+  pre.className = "score-display score-display-compact";
+  pre.textContent = normalizeScoreEmojis(entry.score);
+  article.appendChild(pre);
+
+  article.appendChild(
+    createCommentThread({
+      scoreId: entry.id,
+      surface: "feed",
+      state,
+      onCommentDraftChange,
+      onCommentSubmit,
+      onCommentDelete,
+    })
+  );
+
+  return article;
+}
+
+function createCommentThread({
+  scoreId,
+  surface,
+  state,
+  onCommentDraftChange,
+  onCommentSubmit,
+  onCommentDelete,
+}) {
+  const wrap = document.createElement("div");
+  wrap.className = "comments";
+
+  const comments = state.commentsByScoreId[scoreId] ?? [];
+
+  if (comments.length > 0) {
+    const label = document.createElement("p");
+    label.className = "comments-count";
+    label.textContent = `${comments.length} ${
+      comments.length === 1 ? "comment" : "comments"
+    }`;
+    wrap.appendChild(label);
+
+    const list = document.createElement("ul");
+    list.className = "comment-list";
+
+    for (const comment of comments) {
+      const item = document.createElement("li");
+      item.className = "comment";
+
+      const meta = document.createElement("div");
+      meta.className = "comment-meta";
+
+      const author = document.createElement("span");
+      author.className = "comment-author";
+      author.textContent = state.usersById[comment.userId]?.name ?? "Unknown user";
+      meta.appendChild(author);
+
+      const time = document.createElement("span");
+      time.className = "comment-time";
+      time.textContent = formatSubmittedTime(comment.createdAt);
+      meta.appendChild(time);
+
+      if (state.activeUserId) {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "comment-delete";
+        remove.textContent = "Delete";
+        remove.title = `Delete ${
+          state.usersById[comment.userId]?.name ?? "this user"
+        }'s comment`;
+        remove.disabled = Boolean(state.commentDeleting[comment.id]);
+        remove.addEventListener("click", () => onCommentDelete(comment));
+        meta.appendChild(remove);
+      }
+
+      item.appendChild(meta);
+
+      const body = document.createElement("p");
+      body.className = "comment-body";
+      body.textContent = comment.text;
+      item.appendChild(body);
+
+      list.appendChild(item);
+    }
+
+    wrap.appendChild(list);
+  }
+
+  if (!state.activeUserId) {
+    const hint = document.createElement("p");
+    hint.className = "comment-hint";
+    hint.textContent = "Select a user to leave a comment.";
+    wrap.appendChild(hint);
+    return wrap;
+  }
+
+  const pending = Boolean(state.commentPending[scoreId]);
+
+  const form = document.createElement("form");
+  form.className = "comment-form";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "comment-input";
+  input.placeholder = "Add a comment…";
+  input.maxLength = MAX_COMMENT_LENGTH;
+  input.value = state.commentDrafts[scoreId] ?? "";
+  input.disabled = pending;
+  // A score can appear on both the board and the feed, so the focus key names
+  // the surface too — otherwise focus restore can land on the hidden copy.
+  input.dataset.commentInput = `${surface}:${scoreId}`;
+  input.setAttribute("aria-label", "Add a comment");
+  input.addEventListener("input", () => {
+    onCommentDraftChange(scoreId, input.value);
+  });
+
+  const button = document.createElement("button");
+  button.type = "submit";
+  button.className = "btn btn-secondary btn-small";
+  button.textContent = pending ? "Posting…" : "Post";
+  button.disabled = pending;
+
+  form.appendChild(input);
+  form.appendChild(button);
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    onCommentSubmit(scoreId);
+  });
+
+  wrap.appendChild(form);
+  return wrap;
+}
+
+// Re-rendering replaces the comment inputs, so remember which one had focus
+// and put the caret back afterwards.
+function captureCommentFocus() {
+  const active = document.activeElement;
+  const key = active?.dataset?.commentInput;
+  if (!key) return null;
+  return { key, caret: active.selectionStart };
+}
+
+function restoreCommentFocus(focus) {
+  if (!focus) return;
+  const input = document.querySelector(
+    `[data-comment-input="${CSS.escape(focus.key)}"]`
+  );
+  if (!input || input.disabled) return;
+  input.focus();
+  const caret = focus.caret ?? input.value.length;
+  input.setSelectionRange(caret, caret);
+}
+
+const EASTERN_TIME = { timeZone: "America/New_York" };
+
+function formatSubmittedTime(timestamp) {
+  const millis = timestamp?.toMillis?.();
+  if (millis == null) return "just now";
+  return new Intl.DateTimeFormat("en-US", {
+    ...EASTERN_TIME,
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(millis));
+}
+
+function formatFeedDay(dateKey) {
+  const millis = dateKeyToMillis(dateKey);
+  if (Number.isNaN(millis)) return dateKey;
+
+  const todayKey = new Intl.DateTimeFormat("en-CA", {
+    ...EASTERN_TIME,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(new Date())
+    .replace(/-/g, "");
+
+  if (dateKey === todayKey) return "Today";
+  if (dateKeyToMillis(todayKey) - millis === 86400000) return "Yesterday";
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(millis));
+}
+
+function dateKeyToMillis(dateKey) {
+  const iso = fromYYYYMMDD(dateKey);
+  return iso ? Date.parse(`${iso}T00:00:00Z`) : NaN;
 }
 
 export function getDatePickerElement() {
